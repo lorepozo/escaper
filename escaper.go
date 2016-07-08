@@ -34,7 +34,6 @@ package escaper
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"strings"
 )
 
@@ -68,60 +67,54 @@ type Escaper struct {
 //     out = esc.Expand("%Bthis%b is %F{cyan}colorful%f")
 //     // out is "this is colorful", but with visual style
 func (e *Escaper) Expand(in string) string {
-	ob := new(bytes.Buffer)
-	var trackarg struct {
-		on   bool
-		arg  *bytes.Buffer
-		m    *matcher
-		prev rune
+	b := new(bytes.Buffer)
+	var arg struct {
+		on  bool
+		esc bool
+		b   *bytes.Buffer
+		m   *matcher
 	}
-	inside := false
+	esc := false
 	for _, r := range in {
-		if trackarg.on {
-			if trackarg.prev == '%' {
-				trackarg.arg.WriteRune(r)
-				trackarg.prev = r
-				if r == '%' { // no double escaping
-					trackarg.prev = 0
-				}
+		if arg.on {
+			if arg.esc {
+				arg.b.WriteRune(r)
+				arg.esc = false
 			} else if r == '%' {
-				trackarg.prev = r
+				arg.esc = true
 			} else if r != '}' {
-				trackarg.arg.WriteRune(r)
-				trackarg.prev = r
+				arg.b.WriteRune(r)
 			} else {
-				trackarg.on = false
-				trackarg.prev = 0       // reset prev
-				trackarg.arg.ReadRune() // discard start brace
-				arg, _ := ioutil.ReadAll(trackarg.arg)
-				ob.WriteString(trackarg.m.fa(string(arg)))
+				arg.on = false
+				arg.b.ReadRune() // discard start brace
+				s := arg.b.String()
+				b.WriteString(arg.m.fa(s))
 			}
 			continue
 		}
-		if !inside {
+		if !esc {
 			if r == '%' {
-				inside = true
+				esc = true
 			} else {
-				ob.WriteRune(r)
+				b.WriteRune(r)
 			}
 			continue
 		}
-		inside = false
+		esc = false
 		m, ok := e.matchers[r]
 		if !ok {
-			ob.WriteRune(r)
+			b.WriteRune(r)
 			continue
 		}
 		if !m.takesArg {
-			ob.WriteString(m.f())
+			b.WriteString(m.f())
 			continue
 		}
-		trackarg.on = true
-		trackarg.arg = new(bytes.Buffer)
-		trackarg.m = m
+		arg.on = true
+		arg.b = new(bytes.Buffer)
+		arg.m = m
 	}
-	out, _ := ioutil.ReadAll(ob)
-	return string(out)
+	return b.String()
 }
 
 // Register adds an escape for a rune with its associated function.
