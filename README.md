@@ -31,33 +31,41 @@ name := "Ben Bitdiddle"
 
 // use New() if you don't want the default ANSI escapes
 esc := escaper.New()
+
+// register a new escape
 esc.Register('n', func() string {
   return name
 })
+
+// register an escape that takes an argument
 esc.RegisterArg('D', func(arg string) string {
   return time.Now().Format(arg)
 })
+
+// "my name is Ben Bitdiddle, and the time is 11:15AM"
 output := esc.Expand(format)
 ```
 
 ## The Default
 
-The default escaper supports the following:
-- `%F{<color>}some text%f` colors the text
-- `%K{<color>}some text%k` colors the background
-- `%Bsome text%b` bolds the text
-- `%Usome text%u` underlines the text
-- `%Ssome text%s` standouts (color inverts) the text
+The default escaper supports the following ANSI escapes:
+- `%F{<color>}text%f` colors the text
+- `%K{<color>}text%k` colors the background
+- `%Btext%b` bolds the text
+- `%Utext%u` underlines the text
+- `%Stext%s` standouts (color inverts) the text
 
 `<color>` can be one of:
-- `black`, or `0`
-- `red`, or `1`
-- `green`, or `2`
-- `yellow`, or `3`
-- `blue`, or `4`
-- `magenta`, or `5`
-- `cyan`, or `6`
-- `white`, or `7`
+```
+black   (0)
+red     (1)
+green   (2)
+yellow  (3)
+blue    (4)
+magenta (5)
+cyan    (6)
+white   (7)
+```
 
 ## License
 
