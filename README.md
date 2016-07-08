@@ -3,8 +3,19 @@
 **`escaper`** lets you create your own formatting syntax. By design,
 expanding a format string with this utility requires no additional arguments
 (unlike fmt.Sprinf) by letting you easily register your own escape handlers.
+This makes it **ideal for configurability**, where only a string is
+necessary to specify a complex output format.
 
 ![escaper](http://i.imgur.com/qAAPq5y.png)
+
+## Motivation
+
+There is often desire to make some program output user-configurable.
+A lot of software doesn't bother with configurability and has hard-coded
+output formats. This package aims to eliminate this unfortunate paradigm,
+and easily permit customizability where it is often disregarded. Inspired by
+the style of zsh prompt expansion, **`escaper`** makes output formatting a
+better abstraction for its users.
 
 ## Install
 
@@ -48,7 +59,8 @@ output := esc.Expand(format)
 
 ## The Default
 
-The default escaper supports the following ANSI escapes:
+The default escaper (`escaper.Default()`) supports the following ANSI
+escapes:
 - `%F{<color>}text%f` colors the text
 - `%K{<color>}text%k` colors the background
 - `%Btext%b` bolds the text
