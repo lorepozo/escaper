@@ -62,3 +62,19 @@ func TestCustomEscapes(t *testing.T) {
 		t.Logf("success: %s", output)
 	}
 }
+
+func TestArgumentEscapes(t *testing.T) {
+	format := "please echo %e{some %{100%%%} string}"
+	expected := "please echo some {100%} string"
+	esc := New()
+	esc.RegisterArg('e', func(arg string) string {
+		return arg
+	})
+	output := esc.Expand(format)
+	if output != expected {
+		t.Errorf("expected %s, got %s", expected, output)
+		t.Fail()
+	} else {
+		t.Logf("success: %s", output)
+	}
+}

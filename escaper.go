@@ -56,7 +56,9 @@ type Escaper struct {
 // rune is used.
 //
 // For escapes that take an argument, the argument is surrounded in curly
-// braces '{<ARG>}' and immediately follows the escape rune.
+// braces '{<ARG>}' and immediately follows the escape rune. No expands are
+// performed within the argument, and the '%' still escapes (for the sake of
+// using a literal '}' via '%}').
 //
 // Example:
 //     esc := Default()
@@ -68,17 +70,28 @@ type Escaper struct {
 func (e *Escaper) Expand(in string) string {
 	ob := new(bytes.Buffer)
 	var trackarg struct {
-		on  bool
-		arg *bytes.Buffer
-		m   *matcher
+		on   bool
+		arg  *bytes.Buffer
+		m    *matcher
+		prev rune
 	}
 	inside := false
 	for _, r := range in {
 		if trackarg.on {
-			if r != '}' {
+			if trackarg.prev == '%' {
 				trackarg.arg.WriteRune(r)
+				trackarg.prev = r
+				if r == '%' { // no double escaping
+					trackarg.prev = 0
+				}
+			} else if r == '%' {
+				trackarg.prev = r
+			} else if r != '}' {
+				trackarg.arg.WriteRune(r)
+				trackarg.prev = r
 			} else {
 				trackarg.on = false
+				trackarg.prev = 0       // reset prev
 				trackarg.arg.ReadRune() // discard start brace
 				arg, _ := ioutil.ReadAll(trackarg.arg)
 				ob.WriteString(trackarg.m.fa(string(arg)))
