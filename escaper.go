@@ -57,7 +57,8 @@ type Escaper struct {
 // For escapes that take an argument, the argument is surrounded in curly
 // braces '{<ARG>}' and immediately follows the escape rune. No expands are
 // performed within the argument, and the '%' still escapes (for the sake of
-// using a literal '}' via '%}').
+// using a literal '}' via '%}'). If the escape rune is not immediately
+// followed by a left curly brace, the argument is set to an empty string.
 //
 // Example:
 //     esc := Default()
@@ -69,28 +70,38 @@ type Escaper struct {
 func (e *Escaper) Expand(in string) string {
 	b := new(bytes.Buffer)
 	var arg struct {
-		on  bool
-		esc bool
-		b   *bytes.Buffer
-		m   *matcher
+		on      bool
+		esc     bool
+		started bool // true iff arg-related runes have been read
+		b       *bytes.Buffer
+		m       *matcher
 	}
 	esc := false
 	for _, r := range in {
 		if arg.on {
-			if arg.esc {
-				arg.b.WriteRune(r)
-				arg.esc = false
-			} else if r == '%' {
-				arg.esc = true
-			} else if r != '}' {
-				arg.b.WriteRune(r)
-			} else {
-				arg.on = false
-				arg.b.ReadRune() // discard start brace
-				s := arg.b.String()
-				b.WriteString(arg.m.fa(s))
+			if !arg.started && r == '{' {
+				arg.started = true
 			}
-			continue
+			if arg.started {
+				if arg.esc {
+					arg.b.WriteRune(r)
+					arg.esc = false
+				} else if r == '%' {
+					arg.esc = true
+				} else if r != '}' {
+					arg.b.WriteRune(r)
+				} else {
+					arg.on = false
+					arg.b.ReadRune() // discard start brace
+					s := arg.b.String()
+					b.WriteString(arg.m.fa(s))
+				}
+				continue
+			} else {
+				// no arg = empty arg, read r like normal
+				arg.on = false
+				b.WriteString(arg.m.fa(""))
+			}
 		}
 		if !esc {
 			if r == '%' {
@@ -111,6 +122,7 @@ func (e *Escaper) Expand(in string) string {
 			continue
 		}
 		arg.on = true
+		arg.started = false
 		arg.b = new(bytes.Buffer)
 		arg.m = m
 	}

@@ -78,3 +78,19 @@ func TestArgumentEscapes(t *testing.T) {
 		t.Logf("success: %s", output)
 	}
 }
+
+func TestEmptyArgument(t *testing.T) {
+	format := "doubling a %d{string}, and an empty one: %d{},%dfoo"
+	expected := "doubling a stringstring, and an empty one: ,foo"
+	esc := New()
+	esc.RegisterArg('d', func(arg string) string {
+		return arg + arg
+	})
+	output := esc.Expand(format)
+	if output != expected {
+		t.Errorf("expected %s, got %s", expected, output)
+		t.Fail()
+	} else {
+		t.Logf("success: %s", output)
+	}
+}
